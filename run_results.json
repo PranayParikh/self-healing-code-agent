@@ -1,0 +1,43 @@
+{
+  "case1_syntax": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "passed": false,
+        "patched": true
+      },
+      {
+        "attempt": 2,
+        "passed": true
+      }
+    ]
+  },
+  "case2_type": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "passed": true
+      }
+    ]
+  },
+  "case3_logic": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "passed": true
+      }
+    ]
+  },
+  "case4_import": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "passed": true
+      }
+    ]
+  }
+}

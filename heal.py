@@ -81,6 +81,15 @@ No explanations, no markdown code fences, no commentary — just the raw Python 
     )
     return response.choices[0].message.content.strip()
 
+def clean_llm_output(text):
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines)
+    return text.strip()
 
 def is_valid_python(code):
     try:
@@ -112,6 +121,7 @@ def heal_case(case_dir):
             test_code = f.read()
 
         fixed_code = call_llm_for_patch(current_code, test_code, error_summary)
+        fixed_code = clean_llm_output(fixed_code)
 
         if not is_valid_python(fixed_code):
             print(f"  LLM returned invalid Python, skipping this attempt's write")
