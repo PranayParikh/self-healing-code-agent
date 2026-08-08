@@ -67,7 +67,7 @@ Runs the loop against every case folder in `cases/`, printing live pass/fail sta
 
 To re-run against the original broken files:
 ```bash
-git checkout 4e21af9 original broken cases -- cases/
+git checkout <original-commit-hash> -- cases/
 ```
 
 ## Test cases
@@ -80,14 +80,16 @@ Four hand-written bug categories, chosen to exercise different failure modes rat
 | `case2_type` | Type mismatch (int + str) | `TypeError` at runtime |
 | `case3_logic` | Off-by-one / wrong comparison operator | `AssertionError`, no crash — wrong output |
 | `case4_import` | Typo'd module import | `ModuleNotFoundError` |
+| `case5_hard` | Two interacting bugs: mismatched variable (sum over unfiltered list, divide by filtered length) + incomplete conditional logic (discount only converted to a fraction in one branch, then applied as subtraction instead of multiplication) | Some tests pass, others fail — no crash, partial correctness |
 
 ## Results
 
 ```
-case1_syntax: PASS (2 attempts)
+case1_syntax: PASS (1 attempt)
 case2_type:   PASS (1 attempt)
 case3_logic:  PASS (1 attempt)
 case4_import: PASS (1 attempt)
+case5_hard:   PASS (2 attempts)
 ```
 
 ## A real bug found and fixed
@@ -113,6 +115,23 @@ def clean_llm_output(text):
 After the fix, all four cases passed, most in a single attempt.
 
 This is a good illustration of why the `ast.parse()` validation guard matters: it silently protected the original file from being overwritten with garbage across five failed attempts, rather than corrupting it — the failure was loud and diagnosable from the logs instead of a silent bad state.
+
+## A second example: genuine iterative debugging
+
+`case5_hard` was designed with two independent bugs in the same file (a mismatched-variable bug and an incompletely-handled conditional), specifically to see whether the loop could handle a fix that doesn't succeed on the first try for real logical reasons, not just a formatting issue.
+
+The attempt log shows exactly that:
+```json
+"case5_hard": {
+    "passed": true,
+    "attempts": [
+        { "attempt": 1, "passed": false, "patched": true },
+        { "attempt": 2, "passed": true }
+    ]
+}
+```
+
+Attempt 1 produced a syntactically valid patch that ran successfully but only fixed one of the two bugs — some tests still failed. The failure summary from that attempt was fed back in, and attempt 2 produced a fully correct fix. This is the loop doing what it's meant to do: using concrete test feedback to converge on a correct solution across multiple genuine iterations, rather than getting it right by luck on the first pass.
 
 ## Stack
 

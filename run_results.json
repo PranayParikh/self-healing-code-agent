@@ -4,11 +4,6 @@
     "attempts": [
       {
         "attempt": 1,
-        "passed": false,
-        "patched": true
-      },
-      {
-        "attempt": 2,
         "passed": true
       }
     ]
@@ -36,6 +31,20 @@
     "attempts": [
       {
         "attempt": 1,
+        "passed": true
+      }
+    ]
+  },
+  "case5_hard": {
+    "passed": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "passed": false,
+        "patched": true
+      },
+      {
+        "attempt": 2,
         "passed": true
       }
     ]
