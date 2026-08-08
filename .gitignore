@@ -1,0 +1,5 @@
+venv/
+.env
+*.key__pycache__/
+*.pyc
+report.json
