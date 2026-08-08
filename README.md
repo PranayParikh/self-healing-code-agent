@@ -67,7 +67,7 @@ Runs the loop against every case folder in `cases/`, printing live pass/fail sta
 
 To re-run against the original broken files:
 ```bash
-git checkout <original-commit-hash> -- cases/
+git checkout 4e21af9 original broken cases -- cases/
 ```
 
 ## Test cases
