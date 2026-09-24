@@ -30,3 +30,5 @@ if __name__ == "__main__":
 
     print("Nodes:", list(graph.nodes()))
     print("Edges:", list(graph.edges()))
+    print("Processing order:", list(nx.topological_sort(graph)))
+    print("Is DAG:", nx.is_directed_acyclic_graph(graph))
