@@ -18,6 +18,8 @@ class AgentState(TypedDict):
     skipped: dict[str,str]
     dependency_map: dict[str, list[str]]
     dependency_context: str
+    final_passed: bool
+    final_summary: dict
 
 SAMPLE_REPO_DIR = "sample_repo"
 MAX_RETRIES = 5
@@ -103,6 +105,12 @@ def coder_node(state: AgentState) -> AgentState:
     state["attempt"] += 1
     return state
 
+def final_check_node(state: AgentState) -> AgentState:
+    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR)  # no test file: runs everything
+    state["final_passed"] = passed
+    state["final_summary"] = report["summary"] if report else {}
+    return state
+
 def should_continue(state: AgentState) -> str:
     if state["passed"]:
         return "next_file"
@@ -120,6 +128,7 @@ graph = StateGraph(AgentState)
 graph.add_node("architect", architect_node)
 graph.add_node("tester", tester_node)
 graph.add_node("coder", coder_node)
+graph.add_node("final_check",final_check_node)
 
 
 graph.add_edge(START, "architect")
@@ -127,7 +136,7 @@ graph.add_conditional_edges(
     "architect",
     architect_router,
     {
-        "end": END,
+        "end": "final_check",
         "test": "tester"
     }
 )
@@ -140,6 +149,7 @@ graph.add_conditional_edges(
     }
 )
 graph.add_edge("coder", "tester")
+graph.add_edge("final_check",END)
 
 graph_app = graph.compile()
 
@@ -166,3 +176,5 @@ if __name__ == "__main__":
     print("Plan:", final_state["plan"])
     print("Results:", final_state["result"])
     print("Skipped:", final_state["skipped"])
+    print("Final check passed:", final_state["final_passed"])
+    print("Final summary:", final_state["final_summary"])
