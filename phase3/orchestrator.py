@@ -16,6 +16,8 @@ class AgentState(TypedDict):
     current_index: int
     result: dict[str,dict]
     skipped: dict[str,str]
+    dependency_map: dict[str, list[str]]
+    dependency_context: str
 
 SAMPLE_REPO_DIR = "sample_repo"
 MAX_RETRIES = 5
@@ -24,10 +26,9 @@ import networkx as nx
 from build_graph import build_graph
 
 def architect_node(state: AgentState) -> AgentState:
-    # First run: no plan yet, so build one
     if not state["plan"]:
         graph = build_graph(SAMPLE_REPO_DIR)
-        order = list(reversed(list(nx.topological_sort(graph))))  # dependencies first
+        order = list(reversed(list(nx.topological_sort(graph)))) 
 
         plan = []
         skipped = {}
@@ -40,8 +41,8 @@ def architect_node(state: AgentState) -> AgentState:
 
         state["plan"] = plan
         state["skipped"] = skipped
+        state["dependency_map"] = {n: list(graph.successors(n)) for n in graph.nodes}
 
-    # Later runs: a file just finished, so record its outcome before resetting
     else:
         results = dict(state["result"])
         results[state["filename"]] = {
@@ -52,7 +53,6 @@ def architect_node(state: AgentState) -> AgentState:
 
     state["current_index"] += 1
 
-    # If a file is left, load it and reset the per-file fields
     if state["current_index"] < len(state["plan"]):
         filename = state["plan"][state["current_index"]]
         with open(os.path.join(SAMPLE_REPO_DIR, filename)) as f:
@@ -63,6 +63,11 @@ def architect_node(state: AgentState) -> AgentState:
         state["attempt"] = 0
         state["passed"] = False
         state["last_error"] = ""
+        context_parts = []
+        for dep in state["dependency_map"].get(filename, []):
+            with open(os.path.join(SAMPLE_REPO_DIR, dep)) as f:
+                context_parts.append(f"# ----- {dep} -----\n{f.read()}")
+        state["dependency_context"] = "\n\n".join(context_parts)
 
     return state
 
@@ -87,7 +92,8 @@ def coder_node(state: AgentState) -> AgentState:
     fixed_code = call_llm_for_patch(
         state["current_code"],
         state["test_code"],
-        state["last_error"]
+        state["last_error"],
+        state["dependency_context"]
     )
     fixed_code = clean_llm_output(fixed_code)
 
@@ -149,6 +155,8 @@ if __name__ == "__main__":
         "plan": [],
         "result": {},
         "skipped": {},
+        "dependency_map": {},
+        "dependency_context": "",
         "current_index": -1
     }
 

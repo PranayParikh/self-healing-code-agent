@@ -66,7 +66,14 @@ def extract_error_summary(report, raw_logs):
     return {"failures": failures}
 
 
-def call_llm_for_patch(code, test_code, error_summary):
+def call_llm_for_patch(code, test_code, error_summary, dependency_context=""):
+    deps_section = ""
+    if dependency_context:
+        deps_section = f"""
+READ-ONLY DEPENDENCIES (files that target.py imports from). Do NOT modify them or copy their logic. Call their existing functions and methods instead of reimplementing them:
+{dependency_context}
+"""
+
     prompt = f"""You are fixing a Python file so its tests pass.
 
 CURRENT FILE (target.py):
@@ -74,9 +81,13 @@ CURRENT FILE (target.py):
 
 TEST FILE (test_target.py) — do not modify, this defines the contract:
 {test_code}
-
+{deps_section}
 TEST FAILURE DETAILS:
 {json.dumps(error_summary, indent=2)}
+
+Rules:
+- Only change target.py. Do not add functions or classes that belong in other files.
+- Do not hardcode values (such as rates) that are defined in the dependencies; use the dependencies.
 
 Return ONLY the complete corrected content of target.py.
 No explanations, no markdown code fences, no commentary — just the raw Python file content."""
