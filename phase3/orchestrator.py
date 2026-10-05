@@ -1,7 +1,9 @@
 import os
-from typing import TypedDict
+from typing import TypedDict, List
 from langgraph.graph import START, END, StateGraph
 from heal import run_tests_in_sandbox, extract_error_summary, call_llm_for_patch, clean_llm_output, is_valid_python
+import networkx as nx
+from build_graph import build_graph
 
 class AgentState(TypedDict):
     filename: str
@@ -10,9 +12,59 @@ class AgentState(TypedDict):
     last_error: str
     attempt: int
     passed: bool
+    plan: List[str]
+    current_index: int
+    result: dict[str,dict]
+    skipped: dict[str,str]
 
 SAMPLE_REPO_DIR = "sample_repo"
 MAX_RETRIES = 5
+
+import networkx as nx
+from build_graph import build_graph
+
+def architect_node(state: AgentState) -> AgentState:
+    # First run: no plan yet, so build one
+    if not state["plan"]:
+        graph = build_graph(SAMPLE_REPO_DIR)
+        order = list(reversed(list(nx.topological_sort(graph))))  # dependencies first
+
+        plan = []
+        skipped = {}
+        for filename in order:
+            test_file = "test_" + filename
+            if os.path.exists(os.path.join(SAMPLE_REPO_DIR, test_file)):
+                plan.append(filename)
+            else:
+                skipped[filename] = "no matching test file"
+
+        state["plan"] = plan
+        state["skipped"] = skipped
+
+    # Later runs: a file just finished, so record its outcome before resetting
+    else:
+        results = dict(state["result"])
+        results[state["filename"]] = {
+            "passed": state["passed"],
+            "attempts": state["attempt"],
+        }
+        state["result"] = results
+
+    state["current_index"] += 1
+
+    # If a file is left, load it and reset the per-file fields
+    if state["current_index"] < len(state["plan"]):
+        filename = state["plan"][state["current_index"]]
+        with open(os.path.join(SAMPLE_REPO_DIR, filename)) as f:
+            state["current_code"] = f.read()
+        with open(os.path.join(SAMPLE_REPO_DIR, "test_" + filename)) as f:
+            state["test_code"] = f.read()
+        state["filename"] = filename
+        state["attempt"] = 0
+        state["passed"] = False
+        state["last_error"] = ""
+
+    return state
 
 def tester_node(state: AgentState) -> AgentState:
     target_path = os.path.join(SAMPLE_REPO_DIR, state["filename"])
@@ -47,21 +99,37 @@ def coder_node(state: AgentState) -> AgentState:
 
 def should_continue(state: AgentState) -> str:
     if state["passed"]:
-        return "end"
+        return "next_file"
     elif state["attempt"] < MAX_RETRIES:
         return "continue"
     else:
-        return "end"
+        return "next_file"
+
+def architect_router(state: AgentState) -> str:
+    if state["current_index"] < len(state["plan"]):
+        return "test"
+    return "end"
 
 graph = StateGraph(AgentState)
+graph.add_node("architect", architect_node)
 graph.add_node("tester", tester_node)
 graph.add_node("coder", coder_node)
-graph.add_edge(START, "tester")
+
+
+graph.add_edge(START, "architect")
+graph.add_conditional_edges(
+    "architect",
+    architect_router,
+    {
+        "end": END,
+        "test": "tester"
+    }
+)
 graph.add_conditional_edges(
     "tester",
     should_continue,
     {
-        "end": END,
+        "next_file": "architect",
         "continue": "coder"
     }
 )
@@ -70,26 +138,23 @@ graph.add_edge("coder", "tester")
 graph_app = graph.compile()
 
 if __name__ == "__main__":
-    filename = "basic_test.py"
-    code_path = os.path.join(SAMPLE_REPO_DIR, filename)
-    test_path = os.path.join(SAMPLE_REPO_DIR, "test_basic_test.py")
-
-    with open(code_path) as f:
-        current_code = f.read()
-    with open(test_path) as f:
-        test_code = f.read()
 
     initial_state = {
-        "filename": filename,
-        "current_code": current_code,
-        "test_code": test_code,
+        "filename": "",
+        "current_code": "",
+        "test_code": "",
         "last_error": "",
         "attempt": 0,
-        "passed": False
+        "passed": False,
+        "plan": [],
+        "result": {},
+        "skipped": {},
+        "current_index": -1
     }
 
-    final_state = graph_app.invoke(initial_state)
+    final_state = graph_app.invoke(initial_state, config={"recursion_limit": 50})
 
     print("\n=== Final result ===")
-    print("Passed:", final_state["passed"])
-    print("Attempts used:", final_state["attempt"])
+    print("Plan:", final_state["plan"])
+    print("Results:", final_state["result"])
+    print("Skipped:", final_state["skipped"])

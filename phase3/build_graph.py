@@ -7,7 +7,7 @@ def build_graph(folder):
     all_info = {}
 
     for filename in os.listdir(folder):
-        if filename.endswith(".py"):
+        if filename.endswith(".py") and not filename.startswith("test_"):
             full_path = os.path.join(folder, filename)
             graph.add_node(filename)
             all_info[filename] = parser(full_path)
