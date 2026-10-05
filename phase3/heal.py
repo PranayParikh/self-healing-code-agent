@@ -10,20 +10,27 @@ client_llm = openai.OpenAI()  # reads OPENAI_API_KEY from env
 docker_client = docker.from_env()
 
 
-def run_tests_in_sandbox(case_dir):
-    """Runs pytest inside a container mounted to case_dir. Returns (passed, report_dict, raw_logs)."""
+def run_tests_in_sandbox(case_dir, test_file=None):
+    """Runs pytest inside a container mounted to case_dir.
+    If test_file is given, only that file is run; otherwise pytest discovers all tests.
+    Returns (passed, report_dict, raw_logs)."""
+    command = [
+        "pytest",
+        "--json-report", "--json-report-file=/workspace/report.json",
+        "-v",
+    ]
+    if test_file:                      # NEW
+        command.append(test_file)      # NEW
+
     container = docker_client.containers.run(
         image=IMAGE_NAME,
-        command=[
-            "pytest",
-            "--json-report", "--json-report-file=/workspace/report.json",
-            "-v"
-        ],
+        command=command,               # CHANGED: was an inline list
         volumes={os.path.abspath(case_dir): {"bind": "/workspace", "mode": "rw"}},
         network_disabled=True,
         mem_limit="256m",
         detach=True,
     )
+    # ... the rest of the function is unchanged 
     try:
         result = container.wait(timeout=30)
         logs = container.logs().decode()

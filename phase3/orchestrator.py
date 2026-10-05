@@ -72,7 +72,7 @@ def tester_node(state: AgentState) -> AgentState:
     with open(target_path, "w") as f:
         f.write(state["current_code"])
 
-    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR)
+    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR, "test_" + state["filename"])
 
     if passed:
         state["passed"] = True
