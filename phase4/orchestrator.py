@@ -20,23 +20,25 @@ class AgentState(TypedDict):
     dependency_context: str
     final_passed: bool
     final_summary: dict
+    repo_dir: str
 
-SAMPLE_REPO_DIR = "sample_repo"
 MAX_RETRIES = 5
 
 import networkx as nx
 from build_graph import build_graph
 
 def architect_node(state: AgentState) -> AgentState:
+    repo_dir = state["repo_dir"]
+
     if not state["plan"]:
-        graph = build_graph(SAMPLE_REPO_DIR)
+        graph = build_graph(repo_dir)
         order = list(reversed(list(nx.topological_sort(graph)))) 
 
         plan = []
         skipped = {}
         for filename in order:
             test_file = "test_" + filename
-            if os.path.exists(os.path.join(SAMPLE_REPO_DIR, test_file)):
+            if os.path.exists(os.path.join(repo_dir, test_file)):
                 plan.append(filename)
             else:
                 skipped[filename] = "no matching test file"
@@ -57,9 +59,9 @@ def architect_node(state: AgentState) -> AgentState:
 
     if state["current_index"] < len(state["plan"]):
         filename = state["plan"][state["current_index"]]
-        with open(os.path.join(SAMPLE_REPO_DIR, filename)) as f:
+        with open(os.path.join(repo_dir, filename)) as f:
             state["current_code"] = f.read()
-        with open(os.path.join(SAMPLE_REPO_DIR, "test_" + filename)) as f:
+        with open(os.path.join(repo_dir, "test_" + filename)) as f:
             state["test_code"] = f.read()
         state["filename"] = filename
         state["attempt"] = 0
@@ -67,19 +69,23 @@ def architect_node(state: AgentState) -> AgentState:
         state["last_error"] = ""
         context_parts = []
         for dep in state["dependency_map"].get(filename, []):
-            with open(os.path.join(SAMPLE_REPO_DIR, dep)) as f:
+            with open(os.path.join(repo_dir, dep)) as f:
                 context_parts.append(f"# ----- {dep} -----\n{f.read()}")
         state["dependency_context"] = "\n\n".join(context_parts)
+        if os.environ.get("NO_CONTEXT") == "1":
+            state["dependency_context"] = ""
 
     return state
 
 def tester_node(state: AgentState) -> AgentState:
-    target_path = os.path.join(SAMPLE_REPO_DIR, state["filename"])
+    target_path = os.path.join(state["repo_dir"], state["filename"])
 
     with open(target_path, "w") as f:
         f.write(state["current_code"])
 
-    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR, "test_" + state["filename"])
+    passed, report, raw_logs = run_tests_in_sandbox(
+        state["repo_dir"], "test_" + state["filename"]
+    )
 
     if passed:
         state["passed"] = True
@@ -106,7 +112,7 @@ def coder_node(state: AgentState) -> AgentState:
     return state
 
 def final_check_node(state: AgentState) -> AgentState:
-    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR)  # no test file: runs everything
+    passed, report, raw_logs = run_tests_in_sandbox(state["repo_dir"])
     state["final_passed"] = passed
     state["final_summary"] = report["summary"] if report else {}
     return state
@@ -153,9 +159,9 @@ graph.add_edge("final_check",END)
 
 graph_app = graph.compile()
 
-if __name__ == "__main__":
-
+def run_graph(repo_dir):
     initial_state = {
+        "repo_dir": repo_dir,
         "filename": "",
         "current_code": "",
         "test_code": "",
@@ -167,11 +173,14 @@ if __name__ == "__main__":
         "skipped": {},
         "dependency_map": {},
         "dependency_context": "",
-        "current_index": -1
+        "current_index": -1,
+        "final_passed": False,
+        "final_summary": {},
     }
+    return graph_app.invoke(initial_state, config={"recursion_limit": 50})
 
-    final_state = graph_app.invoke(initial_state, config={"recursion_limit": 50})
-
+if __name__ == "__main__":
+    final_state = run_graph("sample_repo")
     print("\n=== Final result ===")
     print("Plan:", final_state["plan"])
     print("Results:", final_state["result"])

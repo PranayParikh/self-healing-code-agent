@@ -3,3 +3,4 @@ venv/
 *.key__pycache__/
 *.pyc
 report.json
+runs*/

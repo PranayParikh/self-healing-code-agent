@@ -1,0 +1,98 @@
+[
+  {
+    "id": "report_principal",
+    "type": "wrong_output",
+    "passed": false,
+    "attempts": 5,
+    "seconds": 9.83,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 3,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {
+      "report.py": [
+        "interest_rate"
+      ]
+    }
+  },
+  {
+    "id": "report_attr",
+    "type": "crash",
+    "passed": false,
+    "attempts": 5,
+    "seconds": 8.18,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 4,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {
+      "report.py": [
+        "balance"
+      ]
+    }
+  },
+  {
+    "id": "report_syntax",
+    "type": "syntax",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 1.93,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 3,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_minus",
+    "type": "wrong_output",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.56,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_formula",
+    "type": "wrong_output",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.6,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 2,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_init",
+    "type": "wrong_attribute",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.16,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "two_files",
+    "type": "multi_file",
+    "passed": false,
+    "attempts": 5,
+    "seconds": 8.88,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 2,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {
+      "report.py": [
+        "get_balance"
+      ]
+    }
+  }
+]

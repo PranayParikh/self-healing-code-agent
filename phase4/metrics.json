@@ -1,0 +1,86 @@
+[
+  {
+    "id": "report_principal",
+    "type": "wrong_output",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 3.01,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 3,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "report_attr",
+    "type": "crash",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 3.03,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "report_syntax",
+    "type": "syntax",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.37,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_minus",
+    "type": "wrong_output",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 1.94,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_formula",
+    "type": "wrong_output",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.18,
+    "restored_exactly": false,
+    "lines_changed_vs_baseline": 2,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "base_init",
+    "type": "wrong_attribute",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 2.13,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  },
+  {
+    "id": "two_files",
+    "type": "multi_file",
+    "passed": true,
+    "attempts": 1,
+    "seconds": 3.08,
+    "restored_exactly": true,
+    "lines_changed_vs_baseline": 0,
+    "touched_unbroken_files": [],
+    "new_numeric_constants": {},
+    "invented_names": {}
+  }
+]
