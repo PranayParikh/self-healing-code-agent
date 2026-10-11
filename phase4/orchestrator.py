@@ -1,0 +1,180 @@
+import os
+from typing import TypedDict, List
+from langgraph.graph import START, END, StateGraph
+from heal import run_tests_in_sandbox, extract_error_summary, call_llm_for_patch, clean_llm_output, is_valid_python
+import networkx as nx
+from build_graph import build_graph
+
+class AgentState(TypedDict):
+    filename: str
+    current_code: str
+    test_code: str
+    last_error: str
+    attempt: int
+    passed: bool
+    plan: List[str]
+    current_index: int
+    result: dict[str,dict]
+    skipped: dict[str,str]
+    dependency_map: dict[str, list[str]]
+    dependency_context: str
+    final_passed: bool
+    final_summary: dict
+
+SAMPLE_REPO_DIR = "sample_repo"
+MAX_RETRIES = 5
+
+import networkx as nx
+from build_graph import build_graph
+
+def architect_node(state: AgentState) -> AgentState:
+    if not state["plan"]:
+        graph = build_graph(SAMPLE_REPO_DIR)
+        order = list(reversed(list(nx.topological_sort(graph)))) 
+
+        plan = []
+        skipped = {}
+        for filename in order:
+            test_file = "test_" + filename
+            if os.path.exists(os.path.join(SAMPLE_REPO_DIR, test_file)):
+                plan.append(filename)
+            else:
+                skipped[filename] = "no matching test file"
+
+        state["plan"] = plan
+        state["skipped"] = skipped
+        state["dependency_map"] = {n: list(graph.successors(n)) for n in graph.nodes}
+
+    else:
+        results = dict(state["result"])
+        results[state["filename"]] = {
+            "passed": state["passed"],
+            "attempts": state["attempt"],
+        }
+        state["result"] = results
+
+    state["current_index"] += 1
+
+    if state["current_index"] < len(state["plan"]):
+        filename = state["plan"][state["current_index"]]
+        with open(os.path.join(SAMPLE_REPO_DIR, filename)) as f:
+            state["current_code"] = f.read()
+        with open(os.path.join(SAMPLE_REPO_DIR, "test_" + filename)) as f:
+            state["test_code"] = f.read()
+        state["filename"] = filename
+        state["attempt"] = 0
+        state["passed"] = False
+        state["last_error"] = ""
+        context_parts = []
+        for dep in state["dependency_map"].get(filename, []):
+            with open(os.path.join(SAMPLE_REPO_DIR, dep)) as f:
+                context_parts.append(f"# ----- {dep} -----\n{f.read()}")
+        state["dependency_context"] = "\n\n".join(context_parts)
+
+    return state
+
+def tester_node(state: AgentState) -> AgentState:
+    target_path = os.path.join(SAMPLE_REPO_DIR, state["filename"])
+
+    with open(target_path, "w") as f:
+        f.write(state["current_code"])
+
+    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR, "test_" + state["filename"])
+
+    if passed:
+        state["passed"] = True
+    else:
+        state["passed"] = False
+        error_summary = extract_error_summary(report, raw_logs)
+        state["last_error"] = str(error_summary)
+
+    return state
+
+def coder_node(state: AgentState) -> AgentState:
+    fixed_code = call_llm_for_patch(
+        state["current_code"],
+        state["test_code"],
+        state["last_error"],
+        state["dependency_context"]
+    )
+    fixed_code = clean_llm_output(fixed_code)
+
+    if is_valid_python(fixed_code):
+        state["current_code"] = fixed_code
+
+    state["attempt"] += 1
+    return state
+
+def final_check_node(state: AgentState) -> AgentState:
+    passed, report, raw_logs = run_tests_in_sandbox(SAMPLE_REPO_DIR)  # no test file: runs everything
+    state["final_passed"] = passed
+    state["final_summary"] = report["summary"] if report else {}
+    return state
+
+def should_continue(state: AgentState) -> str:
+    if state["passed"]:
+        return "next_file"
+    elif state["attempt"] < MAX_RETRIES:
+        return "continue"
+    else:
+        return "next_file"
+
+def architect_router(state: AgentState) -> str:
+    if state["current_index"] < len(state["plan"]):
+        return "test"
+    return "end"
+
+graph = StateGraph(AgentState)
+graph.add_node("architect", architect_node)
+graph.add_node("tester", tester_node)
+graph.add_node("coder", coder_node)
+graph.add_node("final_check",final_check_node)
+
+
+graph.add_edge(START, "architect")
+graph.add_conditional_edges(
+    "architect",
+    architect_router,
+    {
+        "end": "final_check",
+        "test": "tester"
+    }
+)
+graph.add_conditional_edges(
+    "tester",
+    should_continue,
+    {
+        "next_file": "architect",
+        "continue": "coder"
+    }
+)
+graph.add_edge("coder", "tester")
+graph.add_edge("final_check",END)
+
+graph_app = graph.compile()
+
+if __name__ == "__main__":
+
+    initial_state = {
+        "filename": "",
+        "current_code": "",
+        "test_code": "",
+        "last_error": "",
+        "attempt": 0,
+        "passed": False,
+        "plan": [],
+        "result": {},
+        "skipped": {},
+        "dependency_map": {},
+        "dependency_context": "",
+        "current_index": -1
+    }
+
+    final_state = graph_app.invoke(initial_state, config={"recursion_limit": 50})
+
+    print("\n=== Final result ===")
+    print("Plan:", final_state["plan"])
+    print("Results:", final_state["result"])
+    print("Skipped:", final_state["skipped"])
+    print("Final check passed:", final_state["final_passed"])
+    print("Final summary:", final_state["final_summary"])
