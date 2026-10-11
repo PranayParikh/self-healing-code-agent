@@ -60,7 +60,7 @@ The toy repo has three files: `basic_test.py` (account classes), `report.py` (im
 ## Limitations
  
 - **Small sample.** The runs above are one toy repo and a handful of bugs. Output was close to deterministic (runs 4 and 5 were byte-identical), so repeating a bug adds little evidence. Context is shown to help in run 3; that it generalizes is not shown.
-- **No control run for the crash bug.** Run 4 and 5 were correct, but they were not tested without dependency context, so the context is not proven to be why.
+- **Control run (added in Phase 4).** With the dependency source removed from the prompt, Pass@1 fell from 7/7 to 4/7 in three runs, and the same three bugs failed each time. See `phase4/README.md`. The control removes only the dependency source; the prompt's rules stay in.
 - **The fallback is a heuristic.** The regex can match an `import` line inside a docstring and ignores anything unusual.
 - **Attempt count is not a quality signal.** A fix on attempt 4 can be wrong, and one on attempt 1 can be right. Results record pass/fail and attempts only.
 - **`main.py` is not healed.** It has no test, so it is skipped and reported. A smoke test would be the natural way to cover it.
@@ -72,7 +72,7 @@ Python 3.12 (host), LangGraph, NetworkX, Docker SDK, OpenAI API (`gpt-4o`), pyte
  
 ## Next steps
  
-- Phase 4: LangSmith tracing, Pass@k metrics from a larger set of planted bugs, more test repositories, and a demo recording.
+- Phase 4 (done): tracing, a bug catalog, and the control experiment. See `phase4/README.md`. Still open: more repositories and a demo recording.
 - Optional: a Reviewer node that rejects patches whose diff touches code outside the failing function.
 - Deferred, not dropped: Phase 2.2 (Neo4j and hybrid search).
  

@@ -1,0 +1,135 @@
+[
+  {
+    "id": "report_principal",
+    "type": "wrong_output",
+    "no_context": true,
+    "run": "3",
+    "seconds": 7.82,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 0
+      },
+      "report.py": {
+        "passed": false,
+        "attempts": 5
+      }
+    },
+    "final_passed": false
+  },
+  {
+    "id": "report_attr",
+    "type": "crash",
+    "no_context": true,
+    "run": "3",
+    "seconds": 7.06,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 0
+      },
+      "report.py": {
+        "passed": false,
+        "attempts": 5
+      }
+    },
+    "final_passed": false
+  },
+  {
+    "id": "report_syntax",
+    "type": "syntax",
+    "no_context": true,
+    "run": "3",
+    "seconds": 2.18,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 0
+      },
+      "report.py": {
+        "passed": true,
+        "attempts": 1
+      }
+    },
+    "final_passed": true
+  },
+  {
+    "id": "base_minus",
+    "type": "wrong_output",
+    "no_context": true,
+    "run": "3",
+    "seconds": 2.07,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 1
+      },
+      "report.py": {
+        "passed": true,
+        "attempts": 0
+      }
+    },
+    "final_passed": true
+  },
+  {
+    "id": "base_formula",
+    "type": "wrong_output",
+    "no_context": true,
+    "run": "3",
+    "seconds": 2.18,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 1
+      },
+      "report.py": {
+        "passed": true,
+        "attempts": 0
+      }
+    },
+    "final_passed": true
+  },
+  {
+    "id": "base_init",
+    "type": "wrong_attribute",
+    "no_context": true,
+    "run": "3",
+    "seconds": 2.05,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 1
+      },
+      "report.py": {
+        "passed": true,
+        "attempts": 0
+      }
+    },
+    "final_passed": true
+  },
+  {
+    "id": "two_files",
+    "type": "multi_file",
+    "no_context": true,
+    "run": "3",
+    "seconds": 8.76,
+    "status": "ok",
+    "results": {
+      "basic_test.py": {
+        "passed": true,
+        "attempts": 1
+      },
+      "report.py": {
+        "passed": false,
+        "attempts": 5
+      }
+    },
+    "final_passed": false
+  }
+]
